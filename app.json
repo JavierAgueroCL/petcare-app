@@ -20,10 +20,22 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.app",
+      "manifestPlaceholders": {
+        "auth0Domain": "miapp.us.auth0.com",
+        "auth0Scheme": "com.anonymous.app"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "594ba107-f3ac-4ae6-b848-77095703ef2f"
+      },
+      "auth0Domain": "miapp.us.auth0.com",
+      "auth0ClientId": "TU_CLIENT_ID"
     }
   }
 }
