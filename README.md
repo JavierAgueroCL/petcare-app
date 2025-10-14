@@ -5,7 +5,7 @@ Aplicación móvil React Native para la plataforma PetCare Chile.
 ## Características Implementadas
 
 ### Autenticación
-- Login con Auth0 (simulado para desarrollo)
+- Login con JWT (autenticación local)
 - Gestión de sesión con AsyncStorage
 - Context API para estado global de autenticación
 
@@ -85,7 +85,20 @@ npm install
 
 ```bash
 cp .env.example .env
-# Editar .env con tus credenciales
+# Editar .env con la URL de tu backend
+```
+
+Variables disponibles en `.env`:
+
+```env
+# Ambiente: development, qa, staging, production
+EXPO_PUBLIC_ENV=development
+
+# URL del backend API
+EXPO_PUBLIC_API_URL=http://localhost:3000/api
+
+# Timeout para requests (ms)
+EXPO_PUBLIC_API_TIMEOUT=30000
 ```
 
 ### 3. Iniciar la aplicación
@@ -104,18 +117,39 @@ npm run ios
 npm run web
 ```
 
+**IMPORTANTE**: Después de cambiar variables en `.env`, reinicia el bundler de Expo.
+
+## Ambientes
+
+La app soporta múltiples ambientes. Para cambiar entre ellos:
+
+```bash
+# Development (local)
+cp .env .env.backup  # Backup opcional
+cat .env            # Por defecto usa localhost
+
+# QA
+cp .env.qa .env
+
+# Staging
+cp .env.staging .env
+
+# Production
+cp .env.production .env
+```
+
+Luego reinicia Expo: `npm start`
+
+### URLs por ambiente
+
+- **Development**: `http://localhost:3000/api` o `http://10.0.2.2:3000/api` (Android emulator)
+- **QA**: `https://api-qa.petcare.cl/api`
+- **Staging**: `https://api-staging.petcare.cl/api`
+- **Production**: `https://api.petcare.cl/api`
+
 ## Conexión con Backend
 
-La aplicación está configurada para conectarse al backend en `http://localhost:3000/api` por defecto.
-
-Para cambiar la URL del backend, edita `src/constants/config.js`:
-
-```javascript
-export const API_CONFIG = {
-  BASE_URL: 'http://tu-backend-url/api',
-  TIMEOUT: 30000,
-};
-```
+La URL del backend se lee desde la variable de entorno `EXPO_PUBLIC_API_URL` configurada en el archivo `.env`.
 
 ## Servicios de API Implementados
 
@@ -195,16 +229,16 @@ Tarjeta visual para mostrar información de mascota.
 ### Completado
 - Estructura base del proyecto
 - Sistema de navegación completo
-- Autenticación (simulada, lista para Auth0)
+- Autenticación JWT con backend
 - CRUD completo de mascotas
 - Escáner de códigos QR
 - Gestión de perfil de usuario
 - Conexión con backend API
 - Componentes reutilizables
 - Tema y estilos consistentes
+- Configuración por ambientes
 
 ### Pendiente
-- Integración real con Auth0
 - Carga de imágenes (ImagePicker)
 - Notificaciones push
 - Recordatorios de vacunas
@@ -221,20 +255,27 @@ Tarjeta visual para mostrar información de mascota.
 - **Axios** - Cliente HTTP
 - **AsyncStorage** - Almacenamiento local
 - **Expo Camera** - Escáner QR
-- **React Native Auth0** - Autenticación (preparado)
+- **JWT** - Autenticación con backend
 
 ## Notas de Desarrollo
 
-1. **Autenticación**: Actualmente usa un token simulado. Para producción, implementar Auth0 completamente.
+1. **Variables de entorno**: La app usa `EXPO_PUBLIC_*` para variables accesibles en el código. Reinicia el bundler después de cambios en `.env`.
 
 2. **Imágenes**: El ImagePicker está preparado en los servicios pero requiere implementación en las pantallas.
 
-3. **Backend URL**: Para testing en dispositivo físico, cambiar `localhost` por la IP de tu computadora:
-   ```javascript
-   BASE_URL: 'http://192.168.1.X:3000/api'
+3. **Android Emulator**: Si usas emulador Android, usa `http://10.0.2.2:3000/api` en lugar de `localhost`:
+   ```env
+   EXPO_PUBLIC_API_URL=http://10.0.2.2:3000/api
    ```
 
-4. **Permisos**: La app solicita permisos de cámara automáticamente para el escáner QR.
+4. **iOS Simulator**: `localhost` funciona correctamente en simulador iOS.
+
+5. **Dispositivo físico**: Usa la IP de tu computadora:
+   ```env
+   EXPO_PUBLIC_API_URL=http://192.168.1.X:3000/api
+   ```
+
+6. **Permisos**: La app solicita permisos de cámara automáticamente para el escáner QR.
 
 ## Comandos Útiles
 
