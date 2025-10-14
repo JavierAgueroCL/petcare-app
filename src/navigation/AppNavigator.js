@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -211,10 +212,18 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer key={`session-${sessionId}`}>
-      {isAuthenticated ? <AuthenticatedNavigator /> : <UnauthenticatedNavigator />}
-    </NavigationContainer>
+    <View style={styles.container}>
+      <NavigationContainer key={`session-${sessionId}`}>
+        {isAuthenticated ? <AuthenticatedNavigator /> : <UnauthenticatedNavigator />}
+      </NavigationContainer>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default AppNavigator;
