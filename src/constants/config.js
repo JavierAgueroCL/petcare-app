@@ -3,14 +3,8 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3000/api',
-  TIMEOUT: 30000,
-};
-
-export const AUTH0_CONFIG = {
-  domain: process.env.EXPO_PUBLIC_AUTH0_DOMAIN || 'your-domain.auth0.com',
-  clientId: process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID || 'your-client-id',
-  audience: process.env.EXPO_PUBLIC_AUTH0_AUDIENCE || 'https://api.petcare.cl',
+  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api',
+  TIMEOUT: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '30000', 10),
 };
 
 export const APP_CONFIG = {
