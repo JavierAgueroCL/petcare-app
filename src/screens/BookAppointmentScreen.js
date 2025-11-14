@@ -9,20 +9,24 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import DateInput from '../components/DateInput';
+import SearchableSelect from '../components/SearchableSelect';
+import { showToast } from '../components/Toast';
 import { COLORS, SPACING, FONTS, LAYOUT, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import * as petService from '../services/petService';
 import * as appointmentService from '../services/appointmentService';
+import * as veterinaryService from '../services/veterinaryService';
 
 const BookAppointmentScreen = ({ navigation }) => {
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
+  const [veterinaries, setVeterinaries] = useState([]);
+  const [selectedVeterinary, setSelectedVeterinary] = useState(null);
   const [appointmentType, setAppointmentType] = useState('');
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
@@ -33,7 +37,7 @@ const BookAppointmentScreen = ({ navigation }) => {
   const appointmentTypes = [
     { id: 'checkup', name: 'Control Veterinario', icon: 'medical' },
     { id: 'vaccine', name: 'Vacunación', icon: 'shield-checkmark' },
-    { id: 'grooming', name: 'Peluquería', icon: 'cut' },
+    { id: 'consultation', name: 'Consulta', icon: 'chatbubbles' },
     { id: 'emergency', name: 'Emergencia', icon: 'alert-circle' },
     { id: 'surgery', name: 'Cirugía', icon: 'medkit' },
     { id: 'other', name: 'Otro', icon: 'ellipsis-horizontal' },
@@ -41,6 +45,7 @@ const BookAppointmentScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadPets();
+    loadVeterinaries();
   }, []);
 
   const loadPets = async () => {
@@ -50,16 +55,28 @@ const BookAppointmentScreen = ({ navigation }) => {
     }
   };
 
+  const loadVeterinaries = async () => {
+    const result = await veterinaryService.getVeterinaries();
+    if (result.success && result.data) {
+      setVeterinaries(result.data);
+    }
+  };
+
 
   const handleSubmit = async () => {
     // Validaciones
     if (!selectedPet) {
-      Alert.alert('Error', 'Por favor selecciona una mascota');
+      showToast('Por favor selecciona una mascota', 'error');
+      return;
+    }
+
+    if (!selectedVeterinary) {
+      showToast('Por favor selecciona una veterinaria', 'error');
       return;
     }
 
     if (!appointmentType) {
-      Alert.alert('Error', 'Por favor selecciona el tipo de cita');
+      showToast('Por favor selecciona el tipo de cita', 'error');
       return;
     }
 
@@ -86,6 +103,7 @@ const BookAppointmentScreen = ({ navigation }) => {
     // Crear la cita
     const result = await appointmentService.createAppointment({
       pet_id: selectedPet.id,
+      veterinary_id: selectedVeterinary.id,
       appointment_type: appointmentType,
       appointment_datetime: appointmentDateTime.toISOString(),
       notes,
@@ -99,36 +117,17 @@ const BookAppointmentScreen = ({ navigation }) => {
 
     if (isSuccess) {
       const successMessage = `Se ha agendado tu cita para el ${formatDate(date)} a las ${formatTime(time)}`;
+      showToast(successMessage, 'success');
 
-      if (Platform.OS === 'web') {
-        // En web, mostrar mensaje en pantalla
-        setMessage({ type: 'success', text: successMessage });
-        setTimeout(() => {
-          setMessage(null);
-          navigation.goBack();
-        }, 3000);
-      } else {
-        // En móvil, usar Alert nativo
-        Alert.alert(
-          'Cita Agendada',
-          successMessage,
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
-      }
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
     } else {
       // Mostrar el mensaje de error del servidor
       const errorMessage = result.message || result.error || 'No se pudo agendar la cita';
+      showToast(errorMessage, 'error');
 
-      if (Platform.OS === 'web') {
-        // En web, mostrar mensaje en pantalla
-        setMessage({ type: 'error', text: errorMessage });
-        setTimeout(() => setMessage(null), 5000);
-      } else {
+      if (false) {
         // En móvil, usar Alert nativo
         Alert.alert('Error al agendar cita', errorMessage);
       }
@@ -211,6 +210,19 @@ const BookAppointmentScreen = ({ navigation }) => {
         )}
       </View>
 
+      {/* Seleccionar Veterinaria */}
+      <View style={styles.section}>
+        <SearchableSelect
+          label="Veterinaria"
+          placeholder="Selecciona una veterinaria"
+          value={selectedVeterinary}
+          options={veterinaries}
+          onSelect={setSelectedVeterinary}
+          displayField="name"
+          searchFields={['name', 'address', 'city']}
+        />
+      </View>
+
       {/* Tipo de Cita */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Tipo de cita</Text>
@@ -281,7 +293,7 @@ const BookAppointmentScreen = ({ navigation }) => {
           title="Agendar Cita"
           onPress={handleSubmit}
           loading={loading}
-          disabled={!selectedPet || !appointmentType}
+          disabled={!selectedPet || !selectedVeterinary || !appointmentType}
         />
         <Button
           title="Cancelar"
@@ -458,6 +470,68 @@ const styles = StyleSheet.create({
 
   cancelButton: {
     marginTop: SPACING.md,
+  },
+
+  veterinariesList: {
+    gap: SPACING.md,
+  },
+
+  veterinaryCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    ...SHADOWS.small,
+  },
+
+  veterinaryCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '10',
+  },
+
+  veterinaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+
+  veterinaryName: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+
+  veterinaryNameSelected: {
+    color: COLORS.primary,
+  },
+
+  veterinaryAddress: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+
+  veterinaryPhone: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+  },
+
+  emergencyBadge: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    alignSelf: 'flex-start',
+    marginTop: SPACING.sm,
+  },
+
+  emergencyText: {
+    color: COLORS.textWhite,
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
   },
 });
 

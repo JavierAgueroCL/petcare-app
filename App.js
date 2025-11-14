@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import Toast from './src/components/Toast';
 
 export default function App() {
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function App() {
       <AuthProvider>
         <AppNavigator />
         <StatusBar style="light" />
+        <Toast />
       </AuthProvider>
     </SafeAreaProvider>
   );

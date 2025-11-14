@@ -10,7 +10,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +18,7 @@ import Input from '../components/Input';
 import DateInput from '../components/DateInput';
 import Select from '../components/Select';
 import Button from '../components/Button';
+import { showToast } from '../components/Toast';
 import { COLORS, LAYOUT, SPACING, FONTS } from '../constants/theme';
 
 const AddPetScreen = () => {
@@ -90,9 +90,13 @@ const AddPetScreen = () => {
     setLoading(false);
 
     if (result.success) {
-      Alert.alert('Éxito', 'Mascota agregada correctamente', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      const createdPet = result.data;
+
+      // Mostrar toast de éxito
+      showToast(`${formData.name} ha sido agregado correctamente`, 'success');
+
+      // Redirigir al perfil de la mascota creada
+      navigation.navigate('PetDetail', { petId: createdPet.id });
     } else {
       // Construir mensaje de error con los detalles de validación
       let errorMessage = result.message || 'No se pudo agregar la mascota';

@@ -26,8 +26,11 @@ import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import BookAppointmentScreen from '../screens/BookAppointmentScreen';
 import MedicalRecordsScreen from '../screens/MedicalRecordsScreen';
+import MedicalRecordDetailScreen from '../screens/MedicalRecordDetailScreen';
 import AppointmentsScreen from '../screens/AppointmentsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import UserNotificationsScreen from '../screens/UserNotificationsScreen';
+import CreateReminderScreen from '../screens/CreateReminderScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import PreferencesScreen from '../screens/PreferencesScreen';
 import LanguageScreen from '../screens/LanguageScreen';
@@ -150,14 +153,29 @@ const AuthenticatedNavigator = () => {
         options={{ title: 'Registros Médicos' }}
       />
       <Stack.Screen
+        name="MedicalRecordDetail"
+        component={MedicalRecordDetailScreen}
+        options={{ title: 'Detalle del Registro' }}
+      />
+      <Stack.Screen
         name="Appointments"
         component={AppointmentsScreen}
         options={{ title: 'Mis Citas' }}
       />
       <Stack.Screen
         name="Notifications"
-        component={NotificationsScreen}
+        component={UserNotificationsScreen}
         options={{ title: 'Notificaciones' }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationsScreen}
+        options={{ title: 'Configuración de Notificaciones' }}
+      />
+      <Stack.Screen
+        name="CreateReminder"
+        component={CreateReminderScreen}
+        options={{ title: 'Crear Recordatorio' }}
       />
       <Stack.Screen
         name="ChangePassword"

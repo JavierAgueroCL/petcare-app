@@ -12,19 +12,24 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import * as petService from '../services/petService';
 import * as medicalService from '../services/medicalService';
 import { COLORS, SPACING, FONTS, BORDER_RADIUS, SHADOWS, LAYOUT } from '../constants/theme';
 
-const MedicalRecordsScreen = () => {
+const MedicalRecordsScreen = ({ navigation }) => {
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
   const [medicalRecords, setMedicalRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -225,11 +230,103 @@ const MedicalRecordsScreen = () => {
     </TouchableOpacity>
   );
 
+  const handleRecordPress = (record) => {
+    navigation.navigate('MedicalRecordDetail', {
+      record,
+      petName: selectedPet?.name,
+    });
+  };
+
+  const handleAddPhoto = () => {
+    if (!selectedPet) {
+      Alert.alert('Error', 'Por favor selecciona una mascota primero');
+      return;
+    }
+    setShowPhotoModal(true);
+  };
+
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    return status === 'granted';
+  };
+
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    return status === 'granted';
+  };
+
+  const handleTakePhoto = async () => {
+    setShowPhotoModal(false);
+
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert('Permiso denegado', 'Necesitas dar permiso para usar la cámara');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      await uploadPhoto(result.assets[0].uri);
+    }
+  };
+
+  const handleSelectFromGallery = async () => {
+    setShowPhotoModal(false);
+
+    const hasPermission = await requestMediaLibraryPermission();
+    if (!hasPermission) {
+      Alert.alert('Permiso denegado', 'Necesitas dar permiso para acceder a la galería');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      await uploadPhoto(result.assets[0].uri);
+    }
+  };
+
+  const uploadPhoto = async (imageUri) => {
+    setUploadingPhoto(true);
+    try {
+      const result = await petService.uploadMultiplePetImages(
+        selectedPet.id,
+        [imageUri]
+      );
+
+      if (result.success) {
+        Alert.alert('Éxito', 'La foto ha sido agregada correctamente');
+        await loadPets();
+      } else {
+        Alert.alert('Error', result.message || 'No se pudo subir la foto');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Ocurrió un error al subir la foto');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const MedicalRecordCard = ({ record }) => {
     const typeColor = getRecordTypeColor(record.record_type);
 
     return (
-      <View style={styles.recordCard}>
+      <TouchableOpacity
+        style={styles.recordCard}
+        onPress={() => handleRecordPress(record)}
+        activeOpacity={0.7}
+      >
         <View style={[styles.recordIcon, { backgroundColor: typeColor + '20' }]}>
           <Ionicons
             name={getRecordTypeIcon(record.record_type)}
@@ -302,8 +399,16 @@ const MedicalRecordsScreen = () => {
               </Text>
             </View>
           )}
+
+          <View style={styles.recordFooter}>
+            <View style={styles.recordFooterItem}>
+              <Ionicons name="images-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.recordFooterText}>Ver fotos</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -368,6 +473,86 @@ const MedicalRecordsScreen = () => {
           }
         />
       </View>
+
+      {/* Botón flotante para agregar foto */}
+      {selectedPet && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleAddPhoto}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="camera" size={28} color={COLORS.surface} />
+        </TouchableOpacity>
+      )}
+
+      {/* Modal de selección de foto */}
+      <Modal
+        visible={showPhotoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPhotoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Agregar Foto</Text>
+            <Text style={styles.modalSubtitle}>
+              Selecciona una opción para agregar una foto de {selectedPet?.name}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={handleTakePhoto}
+              activeOpacity={0.7}
+            >
+              <View style={styles.modalOptionIcon}>
+                <Ionicons name="camera" size={32} color={COLORS.primary} />
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Tomar Foto</Text>
+                <Text style={styles.modalOptionDescription}>
+                  Usa la cámara para tomar una foto
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={handleSelectFromGallery}
+              activeOpacity={0.7}
+            >
+              <View style={styles.modalOptionIcon}>
+                <Ionicons name="images" size={32} color={COLORS.success} />
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Seleccionar de Galería</Text>
+                <Text style={styles.modalOptionDescription}>
+                  Elige una foto de tu galería
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowPhotoModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Indicador de carga de foto */}
+      {uploadingPhoto && (
+        <View style={styles.uploadingOverlay}>
+          <View style={styles.uploadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.uploadingText}>Subiendo foto...</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -555,6 +740,28 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.xs,
   },
 
+  recordFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
+  },
+
+  recordFooterItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  recordFooterText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.medium,
+    color: COLORS.primary,
+    marginLeft: SPACING.xs,
+  },
+
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -576,6 +783,129 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
     textAlign: 'center',
+  },
+
+  // Botón flotante (FAB)
+  fab: {
+    position: 'absolute',
+    right: SPACING.lg,
+    bottom: SPACING.lg,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.large,
+    elevation: 8,
+  },
+
+  // Modal de selección de foto
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+
+  modalContent: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
+    paddingBottom: SPACING.xxl,
+  },
+
+  modalTitle: {
+    fontSize: FONTS.sizes.xl,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+
+  modalSubtitle: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
+  },
+
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+
+  modalOptionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+
+  modalOptionText: {
+    flex: 1,
+  },
+
+  modalOptionTitle: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.semibold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
+  },
+
+  modalOptionDescription: {
+    fontSize: FONTS.sizes.sm,
+    color: COLORS.textSecondary,
+  },
+
+  modalCancelButton: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginTop: SPACING.sm,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.divider,
+  },
+
+  modalCancelText: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.semibold,
+    color: COLORS.textSecondary,
+  },
+
+  // Indicador de carga
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  uploadingContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    ...SHADOWS.large,
+  },
+
+  uploadingText: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.medium,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.md,
   },
 });
 

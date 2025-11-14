@@ -2,7 +2,7 @@
  * PetCare Mobile - Pantalla de Inicio
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as petService from '../services/petService';
 import * as medicalService from '../services/medicalService';
 import * as appointmentService from '../services/appointmentService';
@@ -28,9 +28,12 @@ const HomeScreen = () => {
   const [appointmentsCount, setAppointmentsCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Cargar datos cuando la pantalla entra en foco
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -97,24 +100,34 @@ const HomeScreen = () => {
 
       {/* Stats */}
       <View style={styles.statsContainer}>
-        <StatCard
-          icon="paw"
-          value={pets.length}
-          label="Mascotas"
-          color={COLORS.primary}
-        />
-        <StatCard
-          icon="medical"
-          value={vaccinesCount}
-          label="Próximas vacunas"
-          color={COLORS.warning}
-        />
-        <TouchableOpacity onPress={() => navigation.navigate('Appointments')}>
-          <View style={styles.statCard}>
-            <Ionicons name="calendar" size={32} color={COLORS.info} />
-            <Text style={styles.statValue}>{appointmentsCount}</Text>
-            <Text style={styles.statLabel}>Citas</Text>
-          </View>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate('Pets')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="paw" size={32} color={COLORS.primary} />
+          <Text style={styles.statValue}>{pets.length}</Text>
+          <Text style={styles.statLabel}>Mascotas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate('Notifications')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="medical" size={32} color={COLORS.warning} />
+          <Text style={styles.statValue}>{vaccinesCount}</Text>
+          <Text style={styles.statLabel}>Próximas vacunas</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => navigation.navigate('Appointments')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="calendar" size={32} color={COLORS.info} />
+          <Text style={styles.statValue}>{appointmentsCount}</Text>
+          <Text style={styles.statLabel}>Citas</Text>
         </TouchableOpacity>
       </View>
 

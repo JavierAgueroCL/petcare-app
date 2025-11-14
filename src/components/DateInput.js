@@ -26,6 +26,8 @@ const DateInput = ({
   error,
 }) => {
   const [showPicker, setShowPicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDateValue, setTempDateValue] = useState(null);
   const [tempValue, setTempValue] = useState('');
 
   const formatDate = (date) => {
@@ -43,20 +45,47 @@ const DateInput = ({
     return `${hours}:${minutes}`;
   };
 
+  const formatDateTime = (date) => {
+    if (!date) return '';
+    return `${formatDate(date)} ${formatTime(date)}`;
+  };
+
   const formatDisplay = (date) => {
     if (!date) return placeholder;
     if (mode === 'time') return formatTime(date);
+    if (mode === 'datetime') return formatDateTime(date);
     return formatDate(date);
   };
 
   const handlePickerChange = (event, selectedDate) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
+
+      // Para datetime en Android, necesitamos dos pasos
+      if (mode === 'datetime' && selectedDate && event.type !== 'dismissed') {
+        setTempDateValue(selectedDate);
+        // Mostrar el selector de hora después de seleccionar la fecha
+        setTimeout(() => setShowTimePicker(true), 100);
+        return;
+      }
     }
 
     if (selectedDate && event.type !== 'dismissed') {
       onChange(selectedDate);
     }
+  };
+
+  const handleTimePickerChange = (event, selectedTime) => {
+    setShowTimePicker(false);
+
+    if (selectedTime && event.type !== 'dismissed') {
+      // Combinar la fecha guardada con la hora seleccionada
+      const combinedDate = new Date(tempDateValue);
+      combinedDate.setHours(selectedTime.getHours());
+      combinedDate.setMinutes(selectedTime.getMinutes());
+      onChange(combinedDate);
+    }
+    setTempDateValue(null);
   };
 
   const handleWebInputChange = (text) => {
@@ -76,11 +105,18 @@ const DateInput = ({
       date.setHours(parseInt(hours) || 0);
       date.setMinutes(parseInt(minutes) || 0);
       onChange(date);
+    } else if (mode === 'datetime' && text) {
+      // Formato esperado: YYYY-MM-DDTHH:MM
+      const date = new Date(text);
+      if (!isNaN(date.getTime())) {
+        onChange(date);
+      }
     }
   };
 
   const getWebInputType = () => {
     if (mode === 'time') return 'time';
+    if (mode === 'datetime') return 'datetime-local';
     return 'date';
   };
 
@@ -91,6 +127,15 @@ const DateInput = ({
       const hours = value.getHours().toString().padStart(2, '0');
       const minutes = value.getMinutes().toString().padStart(2, '0');
       return `${hours}:${minutes}`;
+    }
+
+    if (mode === 'datetime') {
+      const year = value.getFullYear();
+      const month = (value.getMonth() + 1).toString().padStart(2, '0');
+      const day = value.getDate().toString().padStart(2, '0');
+      const hours = value.getHours().toString().padStart(2, '0');
+      const minutes = value.getMinutes().toString().padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 
     // date
@@ -121,7 +166,13 @@ const DateInput = ({
             onPress={() => setShowPicker(true)}
           >
             <Ionicons
-              name={mode === 'time' ? 'time-outline' : 'calendar-outline'}
+              name={
+                mode === 'time'
+                  ? 'time-outline'
+                  : mode === 'datetime'
+                  ? 'calendar-outline'
+                  : 'calendar-outline'
+              }
               size={20}
               color={value ? COLORS.primary : COLORS.textSecondary}
             />
@@ -133,11 +184,20 @@ const DateInput = ({
           {showPicker && (
             <DateTimePicker
               value={value || new Date()}
-              mode={mode}
+              mode={mode === 'datetime' && Platform.OS === 'android' ? 'date' : mode}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handlePickerChange}
               minimumDate={minimumDate}
               maximumDate={maximumDate}
+            />
+          )}
+
+          {showTimePicker && Platform.OS === 'android' && (
+            <DateTimePicker
+              value={tempDateValue || value || new Date()}
+              mode="time"
+              display="default"
+              onChange={handleTimePickerChange}
             />
           )}
         </>

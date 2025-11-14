@@ -25,8 +25,32 @@ export const getQRScans = async (petId, params = {}) => {
   return await get(`/qr/pets/${petId}/scans`, params);
 };
 
+/**
+ * Generar o obtener QR de una mascota
+ */
+export const generatePetQR = async (petId) => {
+  return await post(`/qr/pets/${petId}/generate`);
+};
+
+/**
+ * Descargar QR como imagen (base64)
+ */
+export const downloadPetQR = async (petId) => {
+  return await get(`/qr/pets/${petId}/download`);
+};
+
+/**
+ * Obtener información pública de una mascota por ID
+ */
+export const getPetByIdPublic = async (petId) => {
+  return await get(`/qr/pet/${petId}`);
+};
+
 export default {
   scanQR,
   regenerateQR,
   getQRScans,
+  generatePetQR,
+  downloadPetQR,
+  getPetByIdPublic,
 };

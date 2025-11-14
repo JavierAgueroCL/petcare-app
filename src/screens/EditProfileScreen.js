@@ -25,8 +25,13 @@ const EditProfileScreen = () => {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     phone: user?.phone || '',
+    street: user?.street || '',
+    streetNumber: user?.streetNumber || '',
+    apartment: user?.apartment || '',
+    city: user?.city || '',
     commune: user?.commune || '',
     region: user?.region || '',
+    postalCode: user?.postalCode || '',
   });
 
   const handleSubmit = async () => {
@@ -87,6 +92,35 @@ const EditProfileScreen = () => {
         />
 
         <Input
+          label="Calle"
+          value={formData.street}
+          onChangeText={(text) => setFormData({ ...formData, street: text })}
+          placeholder="Nombre de la calle"
+        />
+
+        <Input
+          label="Número"
+          value={formData.streetNumber}
+          onChangeText={(text) => setFormData({ ...formData, streetNumber: text })}
+          placeholder="Número de calle"
+          keyboardType="numeric"
+        />
+
+        <Input
+          label="Departamento/Piso (opcional)"
+          value={formData.apartment}
+          onChangeText={(text) => setFormData({ ...formData, apartment: text })}
+          placeholder="Depto, piso, etc."
+        />
+
+        <Input
+          label="Ciudad"
+          value={formData.city}
+          onChangeText={(text) => setFormData({ ...formData, city: text })}
+          placeholder="Tu ciudad"
+        />
+
+        <Input
           label="Comuna"
           value={formData.commune}
           onChangeText={(text) => setFormData({ ...formData, commune: text })}
@@ -98,6 +132,14 @@ const EditProfileScreen = () => {
           value={formData.region}
           onChangeText={(text) => setFormData({ ...formData, region: text })}
           placeholder="Tu región"
+        />
+
+        <Input
+          label="Código Postal (opcional)"
+          value={formData.postalCode}
+          onChangeText={(text) => setFormData({ ...formData, postalCode: text })}
+          placeholder="Código postal"
+          keyboardType="numeric"
         />
 
         <Button
